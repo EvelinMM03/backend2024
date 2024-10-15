@@ -19,6 +19,7 @@ const usuarios= [
     },
 ];
 
+
 app.get("/usuarios",(req, res) => {
     res.status(200).send({usuarios});
 });
