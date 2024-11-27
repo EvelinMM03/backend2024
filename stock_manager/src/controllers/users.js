@@ -1,93 +1,167 @@
-const { request, response } = require('express');
+const{request, response}=require('express');
+const pool = require('../db/connection.js');
+const { usersQueries } = require('../moduls/users.js');
+//const users=[
+//    {id: 1, name: 'Max'},
+//    {id: 2, name: 'Daniel'},
+//  {id: 3, name: 'Agustin'},
+//];
 
-const users = [
-    { id: 1, name: 'John Doe' },
-    { id: 2, name: 'Jane Doe' },
-    { id: 3, name: 'Bob Smith' },
-];
+const getAllUsers= async (req=request, res=response)=>{
+  let conn;
+  try{
+    conn = await pool.getConnection();
+    const users =await conn.query(usersQueries.getAll);
+    
 
-
-const getAll = (req = request, res = response) => {
+   // console.log({users});
     res.send(users);
-};
-
-
-const getById = (req = request, res = response) => {
-    const { id } = req.params;
-
-    if (isNaN(id)) {
-        res.status(400).send('Invalid ID');
-        return;
-    }
-    const user = users.find(user => user.id === +id);
-
-    if (!user) {
-        res.status(404).send('User not found');
-        return;
-    }
-
-    res.send(user);
-};
-
-
-const createUser = (req = request, res = response) => {
-    const { name } = req.body;
-
-    if (!name) {
-        res.status(400).send("Bad request. The 'name' field is missing.");
-        return;
-    }
-
-    const userExists = users.find(user => user.name === name);
-
-    if (userExists) {
-        res.status(409).send('User already exists');
-        return;
-    }
-
-    users.push({ id: users.length + 1, name });
-    res.send("User created successfully");
-};
-
-
-const updateUser = (req = request, res = response) => {
-    const { id } = req.params;
-    const { name } = req.body;
-
-    if (isNaN(id)) {
-        res.status(400).send('Invalid ID');
-        return;
-    }
-    const user = users.find(user => user.id === +id);
-
-    if (!user) {
-        res.status(404).send('User not found');
-        return;
-    }
-
-    users.forEach(user => {
-        if (user.id === +id) {
-            user.name = name;
-        }
-    });
-    res.send("User updated successfully");
-};
-
-const deleteUser = (req=request, res= response) =>{
-    const {id} = req.params;
-    if (isNaN(id)) {
-        res.status(400).send('Invalid ID');
-        return;
-    }
-    const user = users.find(user => user.id === +id);
-
-    if (!user) {
-        res.status(404).send('User not found');
-        return;
-    }
-
-    users.splice(users.findIndex((user) => user.id === +id), 1);
-    res.send("user delete succesfully");
+  }catch(error){
+    res.status(500).send(error);
+    return;
+  }finally{
+  if (conn) conn.end();
+  }
 }
 
-module.exports = { getAll, getById, createUser, updateUser, deleteUser };
+const getUserById = async (req=request, res=response)=>{
+    const {id}=req.params;
+
+    if(isNaN(id)){
+        res.status(400).send('Invalid ID');
+        return;
+      }
+    
+    let conn;
+    try{
+        conn = await pool.getConnection();
+        const user = await conn.query(usersQueries.getUserById, [+id]);
+        if(!user){
+            res.status(404).send('User not found');
+            return;
+        }
+        res.send(user);
+        
+    }catch(error){
+        res.status(500).send(error);
+    }finally{
+        if (conn) conn.end();
+    }
+
+ 
+
+}
+
+// TAREA que explico el profesor en clase
+// Crear un nuevo usuario
+const createUser = async(req = request, res = response) => {
+  const {username, password, email} = req.body;
+
+  if (!username || !password || !email) {
+      res.status(400).send('Bad request. Some fields are missinng.');
+      return;
+  }
+  let conn;
+  try{
+    conn = await pool.getConnection();
+    const user= await conn.query(usersQueries.getUsername,[username]);
+
+    if(user.length >0){
+      res.status(409).send('Username alredy exists');
+      return;
+    }
+    
+    const newUser = await conn.query(usersQueries.create, [username, password, email]);
+
+    if(newUser.affectedRowns === 0){
+      res.status(500).send('User could not be created');
+      return;
+    }
+
+    res.status(201).send("User created succesfully");
+  }catch{
+    res.status(500).send(error);
+    return;
+  }finally{
+    if(conn) conn.end();
+  }
+
+};
+
+// Actualizar un usuario en la base de datos
+const updateUser = async (req = request, res = response) => {
+  const { id } = req.params;
+  const { username } = req.body; // Asegúrate de que el campo aquí coincide con el nombre en el JSON
+
+  if (isNaN(id)) {
+    res.status(400).send('Invalid ID');
+    return;
+  }
+
+  if (!username) {
+    res.status(400).send('Username is required');
+    return;
+  }
+
+  let conn;
+  try {
+    conn = await pool.getConnection();
+
+    // Verificar si el usuario existe
+    const existingUser = await conn.query(usersQueries.getUserById, [id]);
+    if (existingUser.length === 0) {
+      res.status(404).send('User not found');
+      return;
+    }
+
+    // Actualizar el nombre de usuario
+    const result = await conn.query(usersQueries.updateUserName, [username, id]);
+
+    if (result.affectedRows === 0) {
+      res.status(500).send('User could not be updated');
+      return;
+    }
+
+    res.send('User updated successfully');
+  } catch (error) {
+    res.status(500).send(error.message || 'An error occurred');
+  } finally {
+    if (conn) conn.end();
+  }
+};
+
+// Eliminar un usuario por ID
+const deleteUser = (req = request, res = response) => {
+  const {id} = req.params;
+
+  if (isNaN(id)) {
+      res.status(400).send('Invalid ID');
+      return;
+  }
+  
+  let conn;
+  try {
+    conn = await pool.getConnection()
+    const user = await conn.query(userQueries.getUserById, [+id]);
+    if (user.length === 0) {
+      res.status(404).send('User not found');
+      return;
+    }
+
+    const deleteUser= await conn.query(usersQueries.delete, [+id]);
+
+    if (deleteUser.affectedRowns ===) {
+      res.status(500).send('User coul not be deleted');
+      return;
+    }
+
+    res.send("User delete succesful");
+  } catch (error ){
+    res.status(500).send(error);
+    return;
+  }finally {
+    if (conn) conn.end();
+  }
+}
+
+module.exports = { getAllUsers, getUserById, createUser, updateUser, deleteUser };
