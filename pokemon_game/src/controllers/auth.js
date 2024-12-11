@@ -1,7 +1,12 @@
 const {request, response} = require('express');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const pool = require('../db/connection');
 const { userQueries } = require('../models/users');
+require('dotenv').config();
+
+const secret = process.env.SECRET;
+
 
 
 const login = async (req=request, res=response) =>{
@@ -32,9 +37,24 @@ const login = async (req=request, res=response) =>{
             })
             return;
         }
+
+        const token = jwt.sign({
+            id: user.id,
+            isAdmin: user.isAdmin
+        }, secret,{
+            expiresIn: "5m"
+        });
+
+
+
+
+
+        delete user.password;
+
         res.status(200).send({
-            message: "Successfullylogged in",
-            user
+            message: "Successfully logged in",
+            user,
+            token
         });
         
     }catch(err){
