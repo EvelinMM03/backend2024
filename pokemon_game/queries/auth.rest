@@ -1,7 +1,9 @@
 POST http://localhost:3000/auth/login Content-Type: application/json
 
 {
-"email": "evelinmontalvo@gmail.com", "password": "MyPassword"
+"email": "pavoneli@gmail.com", "password": "MyPassword123"
 }
 
-### GET http://localhost:3000/users/protected Content-Type: application/json Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzMzOTQwMTMxLCJleHAiOjE3MzM5NDA0MzF9.qy9kZFHQkCDrJACTYTagT1OMPPwORQ1KcVH2nTZCeJ4
+#{ # "email": "evelinmontalvo@gmail.com", # "password": "MyPassword" #}
+
+### GET http://localhost:3000/users/protected Content-Type: application/json Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaXNfYWRtaW4iOjEsImlhdCI6MTczNDAyMTE2NSwiZXhwIjoxNzM0MDIxNDY1fQ.9SyhgOGt9T6hxo0hVAPJPii3wWpq8o2MCUcFbQzmnhY
